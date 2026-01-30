@@ -1,4 +1,4 @@
-module golang.org/x/crypto
+module github.com/smoxy-io/go-x-crypto
 
 go 1.24.0
 
