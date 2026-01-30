@@ -38,6 +38,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"slices"
 	"sync"
 	"time"
 )
@@ -190,6 +191,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 			CAA          []string `json:"caaIdentities"`
 			ExternalAcct bool     `json:"externalAccountRequired"`
 			Profiles     map[string]string  `json:"profiles"`
+			Profiles     map[string]string  `json:"profiles"`
 		}
 	}
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
@@ -206,6 +208,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 			profiles = append(profiles, p)
 		}
 	}
+	
 	c.dir = &Directory{
 		RegURL:                  v.Reg,
 		AuthzURL:                v.Authz,
@@ -227,6 +230,19 @@ func (c *Client) directoryURL() string {
 		return c.DirectoryURL
 	}
 	return LetsEncryptURL
+}
+
+func (c *Client) validProfile(name string) bool {
+	// profile names are optional, so empty string ("") is valid
+	if name == "" {
+		return true
+	}
+	if len(c.dir.Profiles) == 0 {
+		// no profiles are supported so only valid name is empty string ("")
+		// which is caught above
+		return false
+	}
+	return slices.Contains(c.dir.Profiles, name)
 }
 
 func (c *Client) validProfile(name string) bool {
