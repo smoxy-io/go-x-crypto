@@ -26,7 +26,6 @@ import (
 	mathrand "math/rand"
 	"net"
 	"net/http"
-	"net/netip"
 	"path"
 	"strings"
 	"sync"
@@ -1068,8 +1067,9 @@ func certRequest(key crypto.Signer, name string, ext []pkix.Extension) ([]byte, 
 		Subject:         pkix.Name{CommonName: name},
 		ExtraExtensions: ext,
 	}
-	// add name to DNSNames if name is not an IP address
-	if _, err := netip.ParseAddr(name); err != nil {
+	if ip := net.ParseIP(name); ip != nil {
+		req.IPAddresses = []net.IP{ip}
+	} else {
 		req.DNSNames = []string{name}
 	}
 	return x509.CreateCertificateRequest(rand.Reader, req, key)
