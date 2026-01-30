@@ -189,6 +189,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 			Website      string   `json:"website"`
 			CAA          []string `json:"caaIdentities"`
 			ExternalAcct bool     `json:"externalAccountRequired"`
+			Profiles     map[string]string  `json:"profiles"`
 		}
 	}
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
@@ -196,6 +197,14 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 	}
 	if v.Order == "" {
 		return Directory{}, errPreRFC
+	}
+
+	var profiles []string
+	if len(v.Meta.Profiles) != 0 {
+		profiles = make([]string, 0, len(v.Meta.Profiles))
+		for p, _ := range v.Meta.Profiles {
+			profiles = append(profiles, p)
+		}
 	}
 	c.dir = &Directory{
 		RegURL:                  v.Reg,
@@ -208,6 +217,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 		Website:                 v.Meta.Website,
 		CAA:                     v.Meta.CAA,
 		ExternalAccountRequired: v.Meta.ExternalAcct,
+		Profiles:                profiles
 	}
 	return *c.dir, nil
 }
@@ -217,6 +227,19 @@ func (c *Client) directoryURL() string {
 		return c.DirectoryURL
 	}
 	return LetsEncryptURL
+}
+
+func (c *Client) validProfile(name string) bool {
+	// profile names are optional, so empty string ("") is valid
+	if name == "" {
+		return true
+	}
+	if len(c.dir.Profiles) == 0 {
+		// no profiles are supported so only valid name is empty string ("")
+		// which is caught above
+		return false
+	}
+	return slices.Contains(c.dir.Profiles, name)
 }
 
 // CreateCert was part of the old version of ACME. It is incompatible with RFC 8555.
