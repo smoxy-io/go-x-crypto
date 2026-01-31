@@ -38,7 +38,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"slices"
 	"sync"
 	"time"
 )
@@ -200,15 +199,6 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 	if v.Order == "" {
 		return Directory{}, errPreRFC
 	}
-
-	var profiles []string
-	if len(v.Meta.Profiles) != 0 {
-		profiles = make([]string, 0, len(v.Meta.Profiles))
-		for p, _ := range v.Meta.Profiles {
-			profiles = append(profiles, p)
-		}
-	}
-	
 	c.dir = &Directory{
 		RegURL:                  v.Reg,
 		AuthzURL:                v.Authz,
@@ -220,7 +210,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 		Website:                 v.Meta.Website,
 		CAA:                     v.Meta.CAA,
 		ExternalAccountRequired: v.Meta.ExternalAcct,
-		Profiles:                profiles
+		Profiles:                v.Meta.Profiles,
 	}
 	return *c.dir, nil
 }
@@ -242,7 +232,8 @@ func (c *Client) validProfile(name string) bool {
 		// which is caught above
 		return false
 	}
-	return slices.Contains(c.dir.Profiles, name)
+	_, has := c.dir.Profiles[name]
+	return has
 }
 
 func (c *Client) validProfile(name string) bool {

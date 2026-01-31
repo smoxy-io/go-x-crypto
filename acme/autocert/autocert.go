@@ -176,6 +176,9 @@ type Manager struct {
 	// See RFC 8555, Section 7.3.4 for more details.
 	ExternalAccountBinding *acme.ExternalAccountBinding
 
+	// Profile optional name of certificate profile to use when creating a new order
+	Profile string
+
 	clientMu sync.Mutex
 	client   *acme.Client // initialized by acmeClient method
 
@@ -697,9 +700,16 @@ func (m *Manager) verifyRFC(ctx context.Context, client *acme.Client, domain str
 	// it will most likely not work on another order's authorization either.
 	challengeTypes := m.supportedChallengeTypes()
 	nextTyp := 0 // challengeTypes index
+	authOpts := []acme.OrderOption{acme.WithOrderProfile(m.Profile)}
 AuthorizeOrderLoop:
 	for {
-		o, err := client.AuthorizeOrder(ctx, acme.DomainIDs(domain))
+		var ids []acme.AuthzID
+		if ip := net.ParseIP(domain); ip != nil {
+			ids = acme.IPIDs(domain)
+		} else {
+			ids = acme.DomainIDs(domain)
+		}
+		o, err := client.AuthorizeOrder(ctx, ids, authOpts...)
 		if err != nil {
 			return nil, err
 		}

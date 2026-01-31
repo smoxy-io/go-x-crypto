@@ -312,8 +312,8 @@ type Directory struct {
 	// requests to include external account binding information.
 	ExternalAccountRequired bool
 
-	// Profiles the names of certificate profiles which are supported by the ACME server
-	Profiles []string
+	// Profiles the certificate profiles which are supported by the ACME server
+	Profiles map[string]string
 }
 
 // Order represents a client's request for a certificate.
